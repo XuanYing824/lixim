@@ -1,1243 +1,2330 @@
 <!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Simple Navigation</title>
 
-  <!-- Leaflet map styles -->
-  <link
-    rel="stylesheet"
-    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-  >
+<html lang="en">
+
+<head>
+
+  <meta charset="UTF-8">
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>Tactile Blind Path Navigation - Universiti Malaya</title>
+
+ 
+
+  <!-- Leaflet CSS -->
+
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+
+ 
 
   <style>
-    * {
-      box-sizing: border-box;
-    }
+
+    * { box-sizing: border-box; }
 
     body {
+
       margin: 0;
+
       font-family: Arial, sans-serif;
+
       background: #f3f6fa;
+
       color: #172033;
+
+      min-height: 100vh;
+
+      cursor: pointer; /* Indicates tap anywhere capability */
+
     }
 
     header {
+
       background: #174c3c;
+
       color: white;
-      padding: 20px;
+
+      padding: 18px;
+
       text-align: center;
+
     }
 
-    header h1 {
-      margin: 0 0 6px;
+    header h1 { margin: 0 0 6px; font-size: 24px; }
+
+    header p { margin: 0; font-size: 14px; opacity: 0.9; }
+
+ 
+
+    .tap-banner {
+
+      background: #7c3aed;
+
+      color: white;
+
+      text-align: center;
+
+      padding: 14px 10px;
+
+      font-weight: bold;
+
+      font-size: 16px;
+
+      letter-spacing: 0.5px;
+
     }
 
-    header p {
-      margin: 0;
-      font-size: 14px;
-    }
+ 
 
     .container {
+
       max-width: 1000px;
-      margin: 24px auto;
+
+      margin: 16px auto;
+
       padding: 0 16px;
+
     }
 
     .panel {
+
       background: white;
+
       padding: 20px;
+
       border-radius: 12px;
-      margin-bottom: 16px;
-      box-shadow: 0 2px 10px #0000000d;
+
+      margin-bottom: 14px;
+
+      box-shadow: 0 2px 10px rgba(0,0,0,0.06);
+
     }
 
     label {
+
       display: block;
+
       font-weight: bold;
+
       margin: 12px 0 6px;
+
+      font-size: 14px;
+
     }
 
-    input, select, textarea {
-      width: 100%;
+    .input-group {
+
+      display: flex;
+
+      gap: 8px;
+
+      align-items: center;
+
+    }
+
+    input {
+
+      flex-grow: 1;
+
       padding: 12px;
+
       border: 1px solid #ccd3dd;
-      border-radius: 7px;
+
+      border-radius: 8px;
+
       font-size: 15px;
-      font-family: Arial, sans-serif;
+
+    }
+
+    .mic-btn {
+
+      background: #0284c7;
+
+      color: white;
+
+      border: none;
+
+      border-radius: 8px;
+
+      padding: 12px 16px;
+
+      font-size: 14px;
+
+      font-weight: bold;
+
+      cursor: pointer;
+
+      display: inline-flex;
+
+      align-items: center;
+
+      gap: 6px;
+
+      flex-shrink: 0;
+
+    }
+
+    .mic-btn.listening {
+
+      background: #dc2626;
+
+      animation: pulse 1.2s infinite;
+
+    }
+
+    @keyframes pulse {
+
+      0% { opacity: 1; transform: scale(1); }
+
+      50% { opacity: 0.85; transform: scale(1.03); }
+
+      100% { opacity: 1; transform: scale(1); }
+
+    }
+
+    .btn-row {
+
+      display: flex;
+
+      flex-wrap: wrap;
+
+      gap: 8px;
+
+      margin-top: 14px;
+
     }
 
     button {
+
       border: none;
-      border-radius: 7px;
+
+      border-radius: 8px;
+
       padding: 12px 16px;
-      margin: 12px 6px 0 0;
+
       cursor: pointer;
+
       font-size: 14px;
+
       font-weight: bold;
+
       background: #17694e;
+
       color: white;
+
+      display: inline-flex;
+
+      align-items: center;
+
+      gap: 6px;
+
     }
 
     button.secondary {
+
       background: #e6eee9;
+
       color: #174c3c;
+
     }
 
     button.accent {
-      background: #1d4ed8;
+
+      background: #d97706;
+
       color: white;
+
     }
 
-    /* NEW: Red button style for deleting a selected file */
-    button.danger {
+    button.voice-master {
+
+      background: #7c3aed;
+
+      color: white;
+
+    }
+
+    button.voice-master.listening {
+
       background: #dc2626;
-      color: white;
-      padding: 8px 12px;
-      font-size: 13px;
-      margin-top: 8px;
-    }
 
-    /* NEW: Green button style for marking an obstacle as cleared */
-    button.resolve-btn {
-      background: #15803d;
-      color: white;
-      padding: 8px 12px;
-      font-size: 13px;
-      margin-top: 8px;
-      width: 100%;
+      animation: pulse 1.2s infinite;
+
     }
 
     button:disabled {
-      opacity: 0.6;
-      cursor: wait;
+
+      opacity: 0.55;
+
+      cursor: not-allowed;
+
     }
 
     #map {
+
       width: 100%;
+
       height: 440px;
+
       border-radius: 12px;
+
       z-index: 1;
+
     }
 
-    #status, #reportStatus, #nearbyAlertStatus {
-      margin-top: 12px;
-      padding: 10px 12px;
-      border-radius: 7px;
-      background: #f1f5f9;
-      line-height: 1.5;
-      overflow-wrap: anywhere;
-    }
+    #status {
 
-    .status-success {
-      background: #dcfce7 !important;
-      color: #166534;
-      font-weight: bold;
-    }
+      margin-top: 14px;
 
-    .status-error {
-      background: #fee2e2 !important;
-      color: #991b1b;
-      font-weight: bold;
+      padding: 14px;
+
+      background: #eaf2ee;
+
+      border-left: 5px solid #17694e;
+
+      border-radius: 6px;
+
+      font-weight: 500;
+
+      line-height: 1.4;
+
+      font-size: 15px;
+
     }
 
     .stats {
+
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-      gap: 12px;
-      margin-top: 16px;
+
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+
+      gap: 10px;
+
+      margin-top: 14px;
+
     }
 
     .stat {
+
       background: #edf5f0;
-      padding: 16px;
+
+      padding: 12px;
+
       border-radius: 8px;
+
+      text-align: center;
+
+      font-size: 13px;
+
     }
 
     .stat strong {
+
       display: block;
-      font-size: 22px;
-      margin-top: 6px;
+
+      font-size: 18px;
+
+      margin-top: 4px;
+
+      color: #174c3c;
+
     }
 
-    .hint {
-      color: #586575;
-      font-size: 13px;
-      line-height: 1.5;
-    }
+ 
 
-    /* NEW: Styling for the file preview box and route obstacle cards */
-    .preview-card {
-      background: #f8fafc;
-      border: 1px solid #cbd5e1;
-      border-radius: 8px;
-      padding: 12px;
-      margin-top: 10px;
-    }
+    .voice-controls {
 
-    .obstacle-list {
-      margin-top: 16px;
       display: flex;
-      flex-direction: column;
-      gap: 10px;
-    }
 
-    .obstacle-card {
-      background: #fff5f5;
-      border: 1px solid #feb2b2;
-      border-radius: 8px;
+      gap: 8px;
+
+      margin-top: 14px;
+
       padding: 12px;
+
+      background: #f8fafc;
+
+      border: 1px solid #e2e8f0;
+
+      border-radius: 8px;
+
+      align-items: center;
+
+      flex-wrap: wrap;
+
     }
 
-    .obstacle-card strong {
-      color: #991b1b;
-      display: block;
-      margin-bottom: 4px;
+ 
+
+    .directions-container {
+
+      margin-top: 14px;
+
+      max-height: 280px;
+
+      overflow-y: auto;
+
+      border: 1px solid #ccd3dd;
+
+      border-radius: 8px;
+
+      padding: 10px;
+
     }
 
-    hr {
-      border: none;
-      border-top: 1px solid #e2e8f0;
-      margin: 24px 0;
+    .instruction-step {
+
+      padding: 10px;
+
+      border-bottom: 1px solid #eef2f6;
+
+      display: flex;
+
+      gap: 12px;
+
+      align-items: center;
+
+      border-radius: 6px;
+
+      cursor: pointer;
+
+      transition: background 0.2s;
+
     }
 
-    footer {
-      text-align: center;
-      padding: 20px;
-      color: #586575;
+    .instruction-step.active {
+
+      background: #fef3c7;
+
+      border-left: 4px solid #d97706;
+
+    }
+
+    .step-number {
+
+      background: #17694e;
+
+      color: white;
+
+      border-radius: 50%;
+
+      width: 26px;
+
+      height: 26px;
+
+      display: flex;
+
+      align-items: center;
+
+      justify-content: center;
+
       font-size: 12px;
+
+      font-weight: bold;
+
+      flex-shrink: 0;
+
     }
+
+    .step-badge {
+
+      display: inline-block;
+
+      padding: 2px 6px;
+
+      border-radius: 4px;
+
+      font-size: 11px;
+
+      font-weight: bold;
+
+      margin-bottom: 3px;
+
+    }
+
+    .badge-tactile { background: #fef3c7; color: #b45309; }
+
+    .badge-regular { background: #e5e7eb; color: #374151; }
+
+ 
+
+    .map-legend {
+
+      display: flex;
+
+      gap: 16px;
+
+      font-size: 13px;
+
+      font-weight: bold;
+
+      margin-bottom: 8px;
+
+    }
+
+    .legend-item { display: flex; align-items: center; gap: 6px; }
+
+    .legend-color { width: 18px; height: 6px; border-radius: 3px; }
+
+ 
 
     @media (max-width: 600px) {
-      #map {
-        height: 350px;
-      }
 
-      .panel {
-        padding: 14px;
-      }
+      .stats { grid-template-columns: 1fr; }
+
+      #map { height: 320px; }
+
+      .input-group { flex-direction: column; align-items: stretch; }
+
     }
+
   </style>
+
 </head>
 
+ 
+
 <body>
+
+  <div class="tap-banner" role="banner" aria-label="Tap anywhere instruction">
+
+    🎙️ Tap anywhere on this screen to start speaking your destination
+
+  </div>
+
+ 
+
   <header>
-    <h1>Simple Navigation</h1>
-    <p>Find a route from your starting point to your destination.</p>
+
+    <h1>Tactile Blind Path Navigation</h1>
+
+    <p>Universiti Malaya accessible turn-by-turn route guidance.</p>
+
   </header>
 
-  <main class="container">
-    <section class="panel">
-      <h2>Plan your journey</h2>
-      
-      <label for="mode">Travel Mode</label>
-      <select id="mode" onchange="onModeChanged()">
-        <option value="walking">Walking</option>
-        <option value="cycling">Cycling</option>
-        <option value="driving">Driving</option>
-      </select>
+ 
 
-      <label for="start">Starting point</label>
-      <input
-        id="start"
-        type="text"
-        placeholder="e.g. Universiti Malaya, Kuala Lumpur"
-      >
+  <main class="container">
+
+    <section class="panel">
+
+      <h2>Plan Your Journey</h2>
+
+ 
+
+      <!-- Master Voice Command -->
+
+      <button id="masterMicBtn" class="voice-master" type="button" onclick="startMasterVoiceInput()" style="width: 100%; justify-content: center; margin-bottom: 8px; font-size: 15px;">
+
+        🎙️ Speak Route Command ("Go to...", "From... To...")
+
+      </button>
+
+ 
+
+      <label for="start">Starting Point</label>
+
+      <div class="input-group">
+
+        <input id="start" type="text" placeholder="e.g. KK4 or Faculty of Science">
+
+        <button type="button" class="mic-btn" id="startMicBtn" onclick="listenForInput('start')">🎙️ Speak</button>
+
+      </div>
+
+ 
 
       <label for="destination">Destination</label>
-      <input
-        id="destination"
-        type="text"
-        placeholder="e.g. KL Sentral, Kuala Lumpur"
-      >
 
-      <button id="routeBtn" type="button" onclick="findRoute()">
-        Find route
-      </button>
+      <div class="input-group">
 
-      <button class="secondary" type="button" onclick="useMyLocation()">
-        Use my location
-      </button>
-      
-      <button class="accent" type="button" onclick="toggleVoiceAnnouncements()">
-        Toggle Voice Guidance: <span id="voiceStatus">ON</span>
-      </button>
+        <input id="destination" type="text" placeholder="e.g. KK10 or DTC">
 
-      <button class="secondary" type="button" onclick="clearRoute()">
-        Clear
-      </button>
+        <button type="button" class="mic-btn" id="destMicBtn" onclick="listenForInput('destination')">🎙️ Speak</button>
+
+      </div>
+
+ 
+
+      <div class="btn-row">
+
+        <button id="routeBtn" type="button" onclick="findRoute()">Find Route</button>
+
+        <button class="secondary" type="button" onclick="useMyLocation()">Use My Location</button>
+
+        <button class="secondary" type="button" onclick="toggleVoice()">Voice: <span id="voiceStatus">ON</span></button>
+
+        <button class="secondary" type="button" onclick="clearRoute()">Clear</button>
+
+      </div>
+
+ 
 
       <div id="status" role="status" aria-live="polite">
-        Enter your starting point and destination to begin.
+
+        Ready. Tap anywhere on screen to speak your route.
+
       </div>
+
+ 
 
       <div class="stats">
+
         <div class="stat">
+
           Distance
+
           <strong id="distance">—</strong>
+
         </div>
+
         <div class="stat">
-          Estimated duration
+
+          Tactile Blind Path
+
+          <strong id="tactileCoverage">—</strong>
+
+        </div>
+
+        <div class="stat">
+
+          Duration
+
           <strong id="duration">—</strong>
+
         </div>
-        <div class="stat tactile-highlight">
-          Tactile Blind Paths Detected
-          <strong id="tactileCount">—</strong>
-        </div>
+
       </div>
 
-      <!-- NEW: Section that shows obstacles detected along the active route -->
-      <div id="routeObstaclesContainer" aria-live="polite"></div>
-      
-      <p class="hint">
-        Estimates depend on the routing service and available road data.
-        This is a learning project, not an emergency navigation service.
-      </p>
+ 
 
-      <!-- Nearby obstacle voice alerts -->
-      <hr>
+      <!-- Turn-by-Turn Voice Controls -->
 
-      <h2>Nearby Obstacle Voice Alerts</h2>
-      <p class="hint">
-        Receive voice warnings about reported tactile path obstacles nearby.
-      </p>
+      <div class="voice-controls" id="voiceBar" style="display: none;">
 
-      <button id="nearbyAlertBtn" type="button" onclick="toggleNearbyAlerts()">
-        Enable Nearby Obstacle Alerts
-      </button>
+        <span style="font-size: 13px; font-weight: bold;">Voice Guidance:</span>
 
-      <div id="nearbyAlertStatus" role="status" aria-live="polite">
-        Nearby obstacle alerts are currently off.
+        <button class="secondary" onclick="speakCurrentStep()">Repeat Step</button>
+
+        <button class="secondary" onclick="nextStepVoice()">Next Step</button>
+
+        <button class="accent" id="autoPlayBtn" onclick="toggleAutoPlay()">Read Entire Route</button>
+
+        <button class="secondary" id="simBtn" onclick="toggleSimulation()">Simulate Walk</button>
+
       </div>
 
-      <!-- Community tactile path reports -->
-      <hr>
+ 
 
-      <h2>Report a Tactile Path Issue</h2>
-      <p class="hint">
-        Help other visually impaired users identify obstacles.
-      </p>
+      <div class="directions-container" id="directionsList">
 
-      <label for="issueType">Problem type</label>
-      <select id="issueType">
-        <option value="blocked_vehicle">Vehicle blocking tactile path</option>
-        <option value="construction">Construction or roadwork</option>
-        <option value="damaged_tactile_path">Damaged tactile paving</option>
-        <option value="other_obstacle">Other obstacle</option>
-      </select>
+        <p style="color: #64748b; margin: 0; text-align: center;">Turn-by-turn guidance will appear here once route is found.</p>
 
-      <label for="reportDescription">Description (optional)</label>
-      <textarea
-        id="reportDescription"
-        maxlength="500"
-        rows="3"
-        placeholder="Describe the obstacle..."
-      ></textarea>
-
-      <label for="reportMedia">Upload Photo or Video (optional)</label>
-      <input
-        id="reportMedia"
-        type="file"
-        accept="image/jpeg,image/png,image/webp,video/mp4,video/webm"
-        capture="environment"
-        style="margin:10px 0;"
-      >
-      <p class="hint">
-        Supported: JPG, PNG, WebP, MP4, WebM. Maximum 20 MB per file.
-      </p>
-
-      <!-- Holds the file preview and the "Delete Selected File" button -->
-      <div id="mediaPreview" aria-live="polite"></div>
-      
-      <button
-        id="reportBtn"
-        type="button"
-        onclick="submitCurrentReport()"
-      >
-        Report an issue at my location
-      </button>
-
-      <div id="reportStatus" role="status" aria-live="polite">
-        Fill out the form above and click the button to submit a report.
       </div>
+
     </section>
+
+ 
 
     <section class="panel">
-      <h2>Map</h2>
-      <p class="hint">
-        Click any red obstacle dot on the map to view details or mark it as cleared if the blockage is gone.
-      </p>
+
+      <div class="map-legend">
+
+        <div class="legend-item">
+
+          <div class="legend-color" style="background: #d97706;"></div> Tactile Blind Paving
+
+        </div>
+
+        <div class="legend-item">
+
+          <div class="legend-color" style="background: #2563eb;"></div> Regular Sidewalk / Way
+
+        </div>
+
+      </div>
+
       <div id="map"></div>
 
-      <button id="googleBtn" type="button"
-        class="secondary" onclick="openGoogleMaps()" disabled>
-        Open route in Google Maps
-      </button>
     </section>
+
   </main>
 
-  <footer>
-    Map data ©️ OpenStreetMap contributors.
-    Routing by OSRM demo service.
-  </footer>
+ 
 
-  <!-- Leaflet map library -->
+  <!-- Leaflet JS -->
+
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
-  <!-- Supabase JS Library -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+ 
 
   <script>
-    // 1. Create the map, initially centered on Kuala Lumpur.
-    const map = L.map("map").setView([3.139, 101.6869], 12);
-    
-    const SUPABASE_URL = "https://ywbqchhcpcygkutcvsrp.supabase.co";
-    const SUPABASE_KEY = "sb_publishable_Tjr7GVrlV79vEOFSMuCMhQ_Obypbd0I";
 
-    const supabaseClient = window.supabase.createClient(
-      SUPABASE_URL,
-      SUPABASE_KEY
-    );
+    const map = L.map("map").setView([3.1209, 101.6538], 16);
 
-    // 2. Add OpenStreetMap tiles and attribution.
-    L.tileLayer(
-      "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
-      {
-        maxZoom: 19,
-        attribution:
-          '&copy; <a href="https://www.openstreetmap.org/copyright">' +
-          'OpenStreetMap contributors</a>'
-      }
-    ).addTo(map);
+ 
 
-    // Store markers, route and locations.
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+
+      maxZoom: 19,
+
+      attribution: '&copy; OpenStreetMap contributors'
+
+    }).addTo(map);
+
+ 
+
     let startMarker = null;
+
     let destinationMarker = null;
+
+    let userMarker = null;
+
     let routeLine = null;
-    let currentRouteCoordinates = []; // NEW: Stores the active route points to check for obstacles on the route
-    let startCoords = null;
-    let destinationCoords = null;
-    let voiceGuidanceEnabled = true;
-    let cachedReports = [];
-    let nearbyWatchId = null;
 
-    // NEW: Map of report.id -> Leaflet circleMarker so we can remove individual red dots
-    const reportMarkersMap = new Map();
+ 
 
-    // NEW: Constants for file validation (20 MB limit)
-    const MAX_FILE_SIZE_BYTES = 20 * 1024 * 1024;
-    // Update ALLOWED_MEDIA_TYPES to include iPhone video formats (.mov)
-    const ALLOWED_MEDIA_TYPES = [
-      "image/jpeg",
-      "image/png",
-      "image/webp",
-      "video/mp4",
-      "video/webm",
-      "video/quicktime" // <-- Added for iPhone/Mac .mov videos
-    ];
+    let voiceEnabled = true;
 
-    // Cache previously searched locations to reduce repeat requests.
-    const locationCache = new Map();
+    let instructions = [];
 
-    const statusBox = document.getElementById("status");
-    const routeButton = document.getElementById("routeBtn");
+    let currentStepIdx = 0;
 
-    function speakText(message) {
-      if (voiceGuidanceEnabled && "speechSynthesis" in window) {
-        window.speechSynthesis.cancel();
-        const utterance = new SpeechSynthesisUtterance(message);
-        utterance.rate = 1.0;
-        utterance.lang = "en-US";
-        window.speechSynthesis.speak(utterance);
-      }
-      if ("vibrate" in navigator) {
-        navigator.vibrate(60);
-      }
-    }
+    let autoPlayTimer = null;
 
-    function announce(message) {
-      statusBox.textContent = message;
-      speakText(message);
-    }
+    let isAutoPlaying = false;
 
-    function toggleVoiceAnnouncements() {
-      voiceGuidanceEnabled = !voiceGuidanceEnabled;
-      document.getElementById("voiceStatus").textContent = voiceGuidanceEnabled ? "ON" : "OFF";
-      announce("Voice guidance is now " + (voiceGuidanceEnabled ? "enabled" : "disabled"));
-    }
+    let simulationTimer = null;
 
-    function onModeChanged() {
-      const mode = document.getElementById("mode").value;
-      announce("Mode changed to " + mode);
-    }
+    let isListening = false;
 
-    function resetResults() {
-      document.getElementById("distance").textContent = "—";
-      document.getElementById("duration").textContent = "—";
-      document.getElementById("googleBtn").disabled = true;
-      document.getElementById("routeObstaclesContainer").replaceChildren();
-    }
+ 
 
-    // A separate map layer for community reports.
-    const tactileLayer = L.layerGroup().addTo(map);
+    // =========================================================================
 
-    const issueLabels = {
-      blocked_vehicle: "Vehicle blocking tactile path",
-      construction: "Construction or roadwork",
-      damaged_tactile_path: "Damaged tactile paving",
-      other_obstacle: "Other obstacle"
+    // ACCURATE VERIFIED PHYSICAL LOCATIONS (OPENSTREETMAP ALIGNED)
+
+    // =========================================================================
+
+    const campusLocations = {
+
+      "kk1": { lat: 3.117710, lon: 101.659379, name: "Kolej Kediaman Pertama (Astaka), UM" },
+
+      "kolej 1": { lat: 3.117710, lon: 101.659379, name: "Kolej Kediaman Pertama (Astaka), UM" },
+
+      "kolej kediaman pertama": { lat: 3.117710, lon: 101.659379, name: "Kolej Kediaman Pertama (Astaka), UM" },
+
+      "kolej kediaman ke-1": { lat: 3.117710, lon: 101.659379, name: "Kolej Kediaman Pertama (Astaka), UM" },
+
+      "1st residential college": { lat: 3.117710, lon: 101.659379, name: "Kolej Kediaman Pertama (Astaka), UM" },
+
+      "astaka": { lat: 3.117710, lon: 101.659379, name: "Kolej Kediaman Pertama (Astaka), UM" },
+
+ 
+
+      "kk2": { lat: 3.118052, lon: 101.657733, name: "Kolej Kediaman Kedua (Tuanku Bahiyah), UM" },
+
+      "kolej 2": { lat: 3.118052, lon: 101.657733, name: "Kolej Kediaman Kedua (Tuanku Bahiyah), UM" },
+
+      "kolej kediaman kedua": { lat: 3.118052, lon: 101.657733, name: "Kolej Kediaman Kedua (Tuanku Bahiyah), UM" },
+
+      "kolej kediaman ke-2": { lat: 3.118052, lon: 101.657733, name: "Kolej Kediaman Kedua (Tuanku Bahiyah), UM" },
+
+      "2nd residential college": { lat: 3.118052, lon: 101.657733, name: "Kolej Kediaman Kedua (Tuanku Bahiyah), UM" },
+
+ 
+
+      "kk3": { lat: 3.124586, lon: 101.650861, name: "Kolej Kediaman Ketiga (Tuanku Kurshiah), UM" },
+
+      "kolej 3": { lat: 3.124586, lon: 101.650861, name: "Kolej Kediaman Ketiga (Tuanku Kurshiah), UM" },
+
+      "kolej kediaman ketiga": { lat: 3.124586, lon: 101.650861, name: "Kolej Kediaman Ketiga (Tuanku Kurshiah), UM" },
+
+      "kolej kediaman ke-3": { lat: 3.124586, lon: 101.650861, name: "Kolej Kediaman Ketiga (Tuanku Kurshiah), UM" },
+
+      "kolej kediaman ke 3": { lat: 3.124586, lon: 101.650861, name: "Kolej Kediaman Ketiga (Tuanku Kurshiah), UM" },
+
+      "3rd residential college": { lat: 3.124586, lon: 101.650861, name: "Kolej Kediaman Ketiga (Tuanku Kurshiah), UM" },
+
+ 
+
+      "kk4": { lat: 3.125331, lon: 101.650073, name: "Kolej Kediaman Keempat (Bestari), UM" },
+
+      "kolej 4": { lat: 3.125331, lon: 101.650073, name: "Kolej Kediaman Keempat (Bestari), UM" },
+
+      "kolej kediaman keempat": { lat: 3.125331, lon: 101.650073, name: "Kolej Kediaman Keempat (Bestari), UM" },
+
+      "kolej kediaman ke-4": { lat: 3.125331, lon: 101.650073, name: "Kolej Kediaman Keempat (Bestari), UM" },
+
+      "4th residential college": { lat: 3.125331, lon: 101.650073, name: "Kolej Kediaman Keempat (Bestari), UM" },
+
+ 
+
+      "kk5": { lat: 3.126773, lon: 101.659564, name: "Kolej Kediaman Kelima (Dayasari), UM" },
+
+      "kolej 5": { lat: 3.126773, lon: 101.659564, name: "Kolej Kediaman Kelima (Dayasari), UM" },
+
+      "kolej kediaman kelima": { lat: 3.126773, lon: 101.659564, name: "Kolej Kediaman Kelima (Dayasari), UM" },
+
+      "kolej kediaman ke-5": { lat: 3.126773, lon: 101.659564, name: "Kolej Kediaman Kelima (Dayasari), UM" },
+
+      "5th residential college": { lat: 3.126773, lon: 101.659564, name: "Kolej Kediaman Kelima (Dayasari), UM" },
+
+ 
+
+      "kk6": { lat: 3.115149, lon: 101.655416, name: "Kolej Kediaman Keenam (Ibnu Sina), UM" },
+
+      "kolej 6": { lat: 3.115149, lon: 101.655416, name: "Kolej Kediaman Keenam (Ibnu Sina), UM" },
+
+      "kolej kediaman keenam": { lat: 3.115149, lon: 101.655416, name: "Kolej Kediaman Keenam (Ibnu Sina), UM" },
+
+      "kolej kediaman ke-6": { lat: 3.115149, lon: 101.655416, name: "Kolej Kediaman Keenam (Ibnu Sina), UM" },
+
+      "6th residential college": { lat: 3.115149, lon: 101.655416, name: "Kolej Kediaman Keenam (Ibnu Sina), UM" },
+
+ 
+
+      "kk7": { lat: 3.125851, lon: 101.650657, name: "Kolej Kediaman Ketujuh (Za'ba), UM" },
+
+      "kolej 7": { lat: 3.125851, lon: 101.650657, name: "Kolej Kediaman Ketujuh (Za'ba), UM" },
+
+      "kolej kediaman ketujuh": { lat: 3.125851, lon: 101.650657, name: "Kolej Kediaman Ketujuh (Za'ba), UM" },
+
+      "kolej kediaman ke-7": { lat: 3.125851, lon: 101.650657, name: "Kolej Kediaman Ketujuh (Za'ba), UM" },
+
+      "7th residential college": { lat: 3.125851, lon: 101.650657, name: "Kolej Kediaman Ketujuh (Za'ba), UM" },
+
+ 
+
+      "kk8": { lat: 3.129911, lon: 101.649896, name: "Kolej Kediaman Kelapan (Kinabalu), UM" },
+
+      "kolej 8": { lat: 3.129911, lon: 101.649896, name: "Kolej Kediaman Kelapan (Kinabalu), UM" },
+
+      "kolej kediaman kelapan": { lat: 3.129911, lon: 101.649896, name: "Kolej Kediaman Kelapan (Kinabalu), UM" },
+
+      "kolej kediaman ke-8": { lat: 3.129911, lon: 101.649896, name: "Kolej Kediaman Kelapan (Kinabalu), UM" },
+
+      "8th residential college": { lat: 3.129911, lon: 101.649896, name: "Kolej Kediaman Kelapan (Kinabalu), UM" },
+
+ 
+
+      "kk9": { lat: 3.120489, lon: 101.646168, name: "Kolej Kediaman Kesembilan (Tun Syed Zahiruddin), UM" },
+
+      "kolej 9": { lat: 3.120489, lon: 101.646168, name: "Kolej Kediaman Kesembilan (Tun Syed Zahiruddin), UM" },
+
+      "kolej kediaman kesembilan": { lat: 3.120489, lon: 101.646168, name: "Kolej Kediaman Kesembilan (Tun Syed Zahiruddin), UM" },
+
+      "kolej kediaman ke-9": { lat: 3.120489, lon: 101.646168, name: "Kolej Kediaman Kesembilan (Tun Syed Zahiruddin), UM" },
+
+      "9th residential college": { lat: 3.120489, lon: 101.646168, name: "Kolej Kediaman Kesembilan (Tun Syed Zahiruddin), UM" },
+
+ 
+
+      "kk10": { lat: 3.130618, lon: 101.650469, name: "Kolej Kediaman Kesepuluh (Tun Ahmad Zaidi), UM" },
+
+      "kolej 10": { lat: 3.130618, lon: 101.650469, name: "Kolej Kediaman Kesepuluh (Tun Ahmad Zaidi), UM" },
+
+      "kolej kediaman kesepuluh": { lat: 3.130618, lon: 101.650469, name: "Kolej Kediaman Kesepuluh (Tun Ahmad Zaidi), UM" },
+
+      "kolej kediaman ke-10": { lat: 3.130618, lon: 101.650469, name: "Kolej Kediaman Kesepuluh (Tun Ahmad Zaidi), UM" },
+
+      "10th residential college": { lat: 3.130618, lon: 101.650469, name: "Kolej Kediaman Kesepuluh (Tun Ahmad Zaidi), UM" },
+
+ 
+
+      "kk11": { lat: 3.129199, lon: 101.660426, name: "Kolej Kediaman Kesebelas (Ungku Aziz), UM" },
+
+      "kolej 11": { lat: 3.129199, lon: 101.660426, name: "Kolej Kediaman Kesebelas (Ungku Aziz), UM" },
+
+      "kolej kediaman kesebelas": { lat: 3.129199, lon: 101.660426, name: "Kolej Kediaman Kesebelas (Ungku Aziz), UM" },
+
+      "kolej kediaman ke-11": { lat: 3.129199, lon: 101.660426, name: "Kolej Kediaman Kesebelas (Ungku Aziz), UM" },
+
+      "11th residential college": { lat: 3.129199, lon: 101.660426, name: "Kolej Kediaman Kesebelas (Ungku Aziz), UM" },
+
+ 
+
+      "kk12": { lat: 3.124722, lon: 101.660651, name: "Kolej Kediaman Kedua Belas (Raja Dr Nazrin Shah), UM" },
+
+      "kolej 12": { lat: 3.124722, lon: 101.660651, name: "Kolej Kediaman Kedua Belas (Raja Dr Nazrin Shah), UM" },
+
+      "kolej kediaman kedua belas": { lat: 3.124722, lon: 101.660651, name: "Kolej Kediaman Kedua Belas (Raja Dr Nazrin Shah), UM" },
+
+      "kolej kediaman ke-12": { lat: 3.124722, lon: 101.660651, name: "Kolej Kediaman Kedua Belas (Raja Dr Nazrin Shah), UM" },
+
+      "12th residential college": { lat: 3.124722, lon: 101.660651, name: "Kolej Kediaman Kedua Belas (Raja Dr Nazrin Shah), UM" },
+
+ 
+
+      "fakulti sastera dan sains sosial": { lat: 3.121025, lon: 101.652283, name: "Faculty of Arts and Social Sciences, Universiti Malaya" },
+
+      "faculty of arts and social sciences": { lat: 3.121025, lon: 101.652283, name: "Faculty of Arts and Social Sciences, Universiti Malaya" },
+
+      "fakulti alam bina": { lat: 3.116292, lon: 101.655051, name: "Faculty of Built Environment, Universiti Malaya" },
+
+      "faculty built environment": { lat: 3.116292, lon: 101.655051, name: "Faculty of Built Environment, Universiti Malaya" },
+
+      "fakulti perniagaan dan ekonomi": { lat: 3.118532, lon: 101.653184, name: "Faculty of Business and Economics, Universiti Malaya" },
+
+      "faculty of business and economics": { lat: 3.118532, lon: 101.653184, name: "Faculty of Business and Economics, Universiti Malaya" },
+
+      "fakulti sains komputer dan teknologi maklumat": { lat: 3.1284285, lon: 101.6502099, name: "Faculty of Computer Science and Information Technology, Universiti Malaya" },
+
+      "faculty of computer science and information technology": { lat: 3.1284285, lon: 101.6502099, name: "Faculty of Computer Science and Information Technology, Universiti Malaya" },
+
+      "fakulti seni kreatif": { lat: 3.121081, lon: 101.656695, name: "Faculty of Creative Arts, Universiti Malaya" },
+
+      "faculty of creative arts": { lat: 3.121081, lon: 101.656695, name: "Faculty of Creative Arts, Universiti Malaya" },
+
+      "fakulti pergigian": { lat: 3.111149, lon: 101.653044, name: "Faculty of Dentistry, Universiti Malaya" },
+
+      "faculty of dentistry": { lat: 3.111149, lon: 101.653044, name: "Faculty of Dentistry, Universiti Malaya" },
+
+      "fakulti pendidikan": { lat: 3.120114, lon: 101.652661, name: "Faculty of Education, Universiti Malaya" },
+
+      "faculty of education": { lat: 3.120114, lon: 101.652661, name: "Faculty of Education, Universiti Malaya" },
+
+      "fakulti kejuruteraan": { lat: 3.118076, lon: 101.655844, name: "Faculty of Engineering, Universiti Malaya" },
+
+      "faculty of engineering": { lat: 3.118076, lon: 101.655844, name: "Faculty of Engineering, Universiti Malaya" },
+
+      "fakulti bahasa dan linguistik": { lat: 3.122262, lon: 101.651419, name: "Faculty of Languages and Linguistics, Universiti Malaya" },
+
+      "faculty of languages and linguistics": { lat: 3.122262, lon: 101.651419, name: "Faculty of Languages and Linguistics, Universiti Malaya" },
+
+      "fakulti undang-undang": { lat: 3.117790, lon: 101.661363, name: "Faculty of Law, Universiti Malaya" },
+
+      "faculty of law": { lat: 3.117790, lon: 101.661363, name: "Faculty of Law, Universiti Malaya" },
+
+      "fakulti perubatan": { lat: 3.114715, lon: 101.653227, name: "Faculty of Medicine, Universiti Malaya" },
+
+      "faculty of medicine": { lat: 3.114715, lon: 101.653227, name: "Faculty of Medicine, Universiti Malaya" },
+
+      "fakulti farmasi": { lat: 3.115320, lon: 101.651848, name: "Faculty of Pharmacy, Universiti Malaya" },
+
+      "faculty of pharmacy": { lat: 3.115320, lon: 101.651848, name: "Faculty of Pharmacy, Universiti Malaya" },
+
+      "fakulti sains": { lat: 3.121914, lon: 101.653869, name: "Faculty of Science, Universiti Malaya" },
+
+      "faculty of science": { lat: 3.121914, lon: 101.653869, name: "Faculty of Science, Universiti Malaya" },
+
+      "fakulti sains sukan dan rekreasi": { lat: 3.130095, lon: 101.659679, name: "Faculty of Sports and Exercise Science, Universiti Malaya" },
+
+      "faculty of sports and exercise science": { lat: 3.130095, lon: 101.659679, name: "Faculty of Sports and Exercise Science, Universiti Malaya" },
+
+      "akademi pengajian islam": { lat: 3.133066, lon: 101.657240, name: "Academy of Islamic Studies, Universiti Malaya" },
+
+      "academy of islamic studies": { lat: 3.133066, lon: 101.657240, name: "Academy of Islamic Studies, Universiti Malaya" },
+
+      "akademi pengajian melayu": { lat: 3.124764, lon: 101.652473, name: "Academy of Malay Studies, Universiti Malaya" },
+
+      "academy of malay studies": { lat: 3.124764, lon: 101.652473, name: "Academy of Malay Studies, Universiti Malaya" },
+
+      "pusat asasi sains": { lat: 3.122943, lon: 101.659235, name: "Foundation Studies in Science, Universiti Malaya" },
+
+      "foundation studies in science": { lat: 3.122943, lon: 101.659235, name: "Foundation Studies in Science, Universiti Malaya" },
+
+      "dtc": { lat: 3.121600, lon: 101.656486, name: "Dewan Tunku Canselor (DTC), Universiti Malaya" },
+
+      "perpustakaan": { lat: 3.120311, lon: 101.654110, name: "Main Library, Universiti Malaya" },
+
+      "main library": { lat: 3.120311, lon: 101.654110, name: "Main Library, Universiti Malaya" },
+
+      "kps": { lat: 3.120468, lon: 101.656110, name: "Perdanasiswa Complex, Universiti Malaya" },
+
+      "arena stadium": { lat: 3.131118, lon: 101.659582, name: "Arena Stadium, Universiti Malaya" },
+
+      "swimming pool and sports centre": { lat: 3.128788, lon: 101.659540, name: "Swimming Pool and Sports Centre, Universiti Malaya" },
+
+      "varsity lake": { lat: 3.119268, lon: 101.656639, name: "Varsity Lake, Universiti Malaya" },
+
+      "rimba ilmu botanical garden": { lat: 3.131062, lon: 101.657894, name: "Rimba Ilmu Botanical Garden, Universiti Malaya" },
+
+      "student health clinic": { lat: 3.1218203, lon: 101.6525930, name: "Student Health Clinic, Universiti Malaya" },
+
+      "museum of asian arts": { lat: 3.118218, lon: 101.653179, name: "Museum of Asian Arts, Universiti Malaya" },
+
+      "main exam halls and centre": { lat: 3.115219, lon: 101.658800, name: "Main Exam Halls and Centre, Universiti Malaya" },
+
+      "um central": { lat: 3.121040, lon: 101.653613, name: "UM Central, Universiti Malaya" },
+
+      "um arena": { lat: 3.131041, lon: 101.658843, name: "UM Arena, Universiti Malaya" },
+
+      "high impact research building": { lat: 3.122075, lon: 101.656478, name: "High Impact Research Building, Universiti Malaya" },
+
+      "kk mart": { lat: 3.121177, lon: 101.655557, name: "KK Mart, Universiti Malaya" }
+
     };
 
-    function setStatus(message) {
-      announce(message);
+ 
+
+    function resolveLocation(query) {
+
+      if (!query) return null;
+
+      const clean = query.trim().toLowerCase().replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g, " ");
+
+ 
+
+      const coordMatch = clean.match(/^\s*(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)\s*$/);
+
+      if (coordMatch) {
+
+        return { lat: Number(coordMatch[1]), lon: Number(coordMatch[2]), name: query };
+
+      }
+
+ 
+
+      const collegeMatch = clean.match(/\b(?:kk|kolej\s*(?:kediaman)?(?:\s*ke)?)\s*(\d{1,2})\b/);
+
+      if (collegeMatch) {
+
+        const num = collegeMatch[1];
+
+        const key = `kk${num}`;
+
+        if (campusLocations[key]) {
+
+          return campusLocations[key];
+
+        }
+
+      }
+
+ 
+
+      const strippedKey = clean.replace(/\s+/g, "");
+
+      for (const [key, val] of Object.entries(campusLocations)) {
+
+        if (key.replace(/\s+/g, "") === strippedKey) {
+
+          return val;
+
+        }
+
+      }
+
+ 
+
+      for (const [key, val] of Object.entries(campusLocations)) {
+
+        if (clean.includes(key)) {
+
+          return val;
+
+        }
+
+      }
+
+ 
+
+      return null;
+
     }
 
-    function setReportStatus(message, type = "normal") {
-      const box = document.getElementById("reportStatus");
-      box.textContent = message;
-      box.className = "";
-      if (type === "success") box.classList.add("status-success");
-      if (type === "error") box.classList.add("status-error");
-      speakText(message);
-    }
+ 
 
     // =========================================================================
-    // NEW (UPDATES 1 & 2): Validate file size (20 MB max) immediately & allow
-    // the user to delete/remove the file they selected.
+
+    // SPEECH RECOGNITION (Input Engine)
+
     // =========================================================================
-    const reportMediaInput = document.getElementById("reportMedia");
 
-    if (reportMediaInput) {
-      reportMediaInput.addEventListener("change", validateAndPreviewMedia);
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+ 
+
+    function initSpeechRecognizer() {
+
+      if (!SpeechRecognition) return null;
+
+      const recognizer = new SpeechRecognition();
+
+      recognizer.continuous = false;
+
+      recognizer.interimResults = false;
+
+      recognizer.lang = "en-MY";
+
+      return recognizer;
+
     }
 
-    function validateAndPreviewMedia() {
-      const preview = document.getElementById("mediaPreview");
-      preview.replaceChildren();
+ 
 
-      const file = reportMediaInput.files && reportMediaInput.files[0];
-      if (!file) return;
+    function listenForInput(targetFieldId) {
 
-      // 1. Check if file size is over 20 MB (Update #2)
-      if (file.size > MAX_FILE_SIZE_BYTES) {
-        const fileSizeMB = (file.size / (1024 * 1024)).toFixed(1);
-        reportMediaInput.value = ""; // Automatically clear the oversized file
-        setReportStatus(
-          `Error: "${file.name}" is ${fileSizeMB} MB, which exceeds the 20 MB maximum limit. Please choose a smaller file.`,
-          "error"
-        );
+      if (!SpeechRecognition) {
+
+        announce("Speech recognition is not supported in this browser. Please use Google Chrome.");
+
         return;
+
       }
 
-      // 2. Check if file format is supported
-      if (!ALLOWED_MEDIA_TYPES.includes(file.type)) {
-        reportMediaInput.value = "";
-        setReportStatus(
-          "Error: Unsupported file format. Please upload a JPG, PNG, WebP, MP4, or WebM file.",
-          "error"
-        );
+ 
+
+      if ("speechSynthesis" in window) {
+
+        window.speechSynthesis.cancel();
+
+      }
+
+ 
+
+      const micBtn = document.getElementById(targetFieldId === "start" ? "startMicBtn" : "destMicBtn");
+
+      const promptLabel = targetFieldId === "start" ? "starting point" : "destination";
+
+ 
+
+      isListening = true;
+
+      micBtn.classList.add("listening");
+
+      micBtn.textContent = "Listening...";
+
+      document.getElementById("status").textContent = `Listening for ${promptLabel}... Speak now.`;
+
+ 
+
+      const recognizer = initSpeechRecognizer();
+
+ 
+
+      recognizer.onresult = (event) => {
+
+        if (event.results && event.results.length > 0) {
+
+          const transcript = event.results[0][0].transcript.trim().replace(/\.$/, "");
+
+          document.getElementById(targetFieldId).value = transcript;
+
+          announce(`${promptLabel} set to ${transcript}`);
+
+        }
+
+      };
+
+ 
+
+      recognizer.onerror = (event) => {
+
+        announce("No sound detected. Tap anywhere and try again.");
+
+      };
+
+ 
+
+      recognizer.onend = () => {
+
+        isListening = false;
+
+        micBtn.classList.remove("listening");
+
+        micBtn.textContent = "🎙️ Speak";
+
+      };
+
+ 
+
+      setTimeout(() => {
+
+        try { recognizer.start(); } catch (e) {}
+
+      }, 200);
+
+    }
+
+ 
+
+    function startMasterVoiceInput() {
+
+      if (isListening) return;
+
+ 
+
+      if (!SpeechRecognition) {
+
+        announce("Speech recognition is not supported in this browser. Please use Google Chrome.");
+
         return;
+
       }
 
-      // 3. File is valid! Show file info and a "Delete Selected File" button (Update #1)
-      const fileSizeMB = (file.size / (1024 * 1024)).toFixed(2);
-      setReportStatus(`File "${file.name}" (${fileSizeMB} MB) selected and ready to upload.`);
+ 
 
-      const card = document.createElement("div");
-      card.className = "preview-card";
+      if ("speechSynthesis" in window) {
 
-      const note = document.createElement("p");
-      note.className = "hint";
-      note.style.margin = "0 0 8px 0";
-      note.textContent = `Selected file: ${file.name} (${fileSizeMB} MB)`;
+        window.speechSynthesis.cancel();
 
-      const deleteBtn = document.createElement("button");
-      deleteBtn.type = "button";
-      deleteBtn.className = "danger";
-      deleteBtn.textContent = "Delete Selected File";
-      deleteBtn.onclick = removeSelectedMedia;
+      }
 
-      card.append(note, deleteBtn);
-      preview.appendChild(card);
+ 
+
+      isListening = true;
+
+      const masterBtn = document.getElementById("masterMicBtn");
+
+      masterBtn.classList.add("listening");
+
+      masterBtn.textContent = "Listening... Speak now";
+
+      document.getElementById("status").textContent = "Listening... Tell me your destination (e.g. 'KK4 to KK10' or 'Go to Faculty of Science')";
+
+ 
+
+      const recognizer = initSpeechRecognizer();
+
+ 
+
+      recognizer.onresult = (event) => {
+
+        if (event.results && event.results.length > 0) {
+
+          const transcript = event.results[0][0].transcript.trim();
+
+          parseVoiceRouteCommand(transcript);
+
+        }
+
+      };
+
+ 
+
+      recognizer.onerror = () => {
+
+        announce("Could not understand voice command. Tap anywhere to try again.");
+
+      };
+
+ 
+
+      recognizer.onend = () => {
+
+        isListening = false;
+
+        masterBtn.classList.remove("listening");
+
+        masterBtn.textContent = '🎙️ Speak Route Command ("Go to...", "From... To...")';
+
+      };
+
+ 
+
+      setTimeout(() => {
+
+        try { recognizer.start(); } catch (e) {}
+
+      }, 200);
+
     }
 
-    // NEW (UPDATE #1): Function to delete/clear the uploaded file from the form
-    function removeSelectedMedia() {
-      if (reportMediaInput) {
-        reportMediaInput.value = "";
+ 
+
+    function parseVoiceRouteCommand(text) {
+
+      let clean = text.replace(/^(please\s+|can\s+you\s+)/i, "").toLowerCase();
+
+ 
+
+      const fromToMatch = clean.match(/from\s+(.+?)\s+to\s+(.+)/i);
+
+      if (fromToMatch) {
+
+        document.getElementById("start").value = fromToMatch[1].trim();
+
+        document.getElementById("destination").value = fromToMatch[2].trim();
+
+        announce(`Route set from ${fromToMatch[1]} to ${fromToMatch[2]}. Finding route...`);
+
+        findRoute();
+
+        return;
+
       }
-      const preview = document.getElementById("mediaPreview");
-      if (preview) {
-        preview.replaceChildren();
+
+ 
+
+      const directToMatch = clean.match(/^(.+?)\s+to\s+(.+)$/i);
+
+      if (directToMatch) {
+
+        document.getElementById("start").value = directToMatch[1].trim();
+
+        document.getElementById("destination").value = directToMatch[2].trim();
+
+        announce(`Route set from ${directToMatch[1]} to ${directToMatch[2]}. Finding route...`);
+
+        findRoute();
+
+        return;
+
       }
-      setReportStatus("Selected file has been deleted.");
+
+ 
+
+      const destMatch = clean.match(/(?:go to|navigate to|take me to|walk to)\s+(.+)/i);
+
+      if (destMatch) {
+
+        document.getElementById("destination").value = destMatch[1].trim();
+
+        if (!document.getElementById("start").value.trim()) {
+
+          useMyLocation(() => { findRoute(); });
+
+        } else {
+
+          findRoute();
+
+        }
+
+        return;
+
+      }
+
+ 
+
+      document.getElementById("destination").value = clean;
+
+      if (!document.getElementById("start").value.trim()) {
+
+        useMyLocation(() => { findRoute(); });
+
+      } else {
+
+        findRoute();
+
+      }
+
     }
 
-    // Helper: Get user GPS or fall back to Starting Point / Map Center so laptop testing works
-    async function getReportCoordinates() {
-      if (navigator.geolocation) {
+ 
+
+    // =========================================================================
+
+    // TAP ANYWHERE SCREEN LISTENER FOR BLIND USERS
+
+    // =========================================================================
+
+    document.addEventListener("click", (e) => {
+
+      // Don't override if the user intentionally taps a specific button or text field
+
+      if (e.target.closest("button") || e.target.closest("input") || e.target.closest("#map") || e.target.closest(".instruction-step")) {
+
+        return;
+
+      }
+
+      startMasterVoiceInput();
+
+    });
+
+ 
+
+    // =========================================================================
+
+    // TEXT-TO-SPEECH (TTS Voice Guidance)
+
+    // =========================================================================
+
+    function speakText(text, onComplete = null) {
+
+      if (!voiceEnabled || !("speechSynthesis" in window)) {
+
+        if (onComplete) onComplete();
+
+        return;
+
+      }
+
+ 
+
+      window.speechSynthesis.cancel();
+
+      const utterance = new SpeechSynthesisUtterance(text);
+
+      utterance.rate = 0.95;
+
+      utterance.lang = "en-US";
+
+ 
+
+      if (onComplete) {
+
+        utterance.onend = onComplete;
+
+        utterance.onerror = onComplete;
+
+      }
+
+      window.speechSynthesis.speak(utterance);
+
+    }
+
+ 
+
+    function announce(msg) {
+
+      document.getElementById("status").textContent = msg;
+
+      speakText(msg);
+
+    }
+
+ 
+
+    function toggleVoice() {
+
+      voiceEnabled = !voiceEnabled;
+
+      document.getElementById("voiceStatus").textContent = voiceEnabled ? "ON" : "OFF";
+
+      if (!voiceEnabled) {
+
+        window.speechSynthesis.cancel();
+
+        stopAutoPlay();
+
+      } else {
+
+        speakText("Voice guidance enabled.");
+
+      }
+
+    }
+
+ 
+
+    // =========================================================================
+
+    // SPATIAL MATHEMATICS
+
+    // =========================================================================
+
+    function distanceMetres(a, b) {
+
+      const R = 6371000;
+
+      const rad = v => v * Math.PI / 180;
+
+      const dLat = rad(b.lat - a.lat);
+
+      const dLon = rad(b.lon - a.lon);
+
+      const h = Math.sin(dLat / 2) ** 2 + Math.cos(rad(a.lat)) * Math.cos(rad(b.lat)) * Math.sin(dLon / 2) ** 2;
+
+      return 2 * R * Math.asin(Math.sqrt(h));
+
+    }
+
+ 
+
+    function getBearing(a, b) {
+
+      const rad = Math.PI / 180;
+
+      const lat1 = a.lat * rad;
+
+      const lat2 = b.lat * rad;
+
+      const dLon = (b.lon - a.lon) * rad;
+
+      const y = Math.sin(dLon) * Math.cos(lat2);
+
+      const x = Math.cos(lat1) * Math.sin(lat2) - Math.sin(lat1) * Math.cos(lat2) * Math.cos(dLon);
+
+      return (Math.atan2(y, x) * 180 / Math.PI + 360) % 360;
+
+    }
+
+ 
+
+    function getTurnDescription(turnAngle) {
+
+      const diff = ((turnAngle + 540) % 360) - 180;
+
+      const abs = Math.abs(diff);
+
+ 
+
+      if (abs < 30) return "Continue straight";
+
+      if (abs < 65) return diff > 0 ? "Bear slightly right" : "Bear slightly left";
+
+      if (abs < 125) return diff > 0 ? "Turn right" : "Turn left";
+
+      return diff > 0 ? "Make a sharp right" : "Make a sharp left";
+
+    }
+
+ 
+
+    // =========================================================================
+
+    // OVERPASS & ROUTING ENGINE
+
+    // =========================================================================
+
+    function isElementTactile(tags = {}) {
+
+      if (!tags) return false;
+
+      const val = tags.tactile_paving;
+
+      if (val === "yes" || val === "primitive" || val === "contrasted" || val === "incorrect") return true;
+
+ 
+
+      if (
+
+        tags["sidewalk:both:tactile_paving"] === "yes" ||
+
+        tags["sidewalk:right:tactile_paving"] === "yes" ||
+
+        tags["sidewalk:left:tactile_paving"] === "yes" ||
+
+        tags["sidewalk:tactile_paving"] === "yes"
+
+      ) return true;
+
+ 
+
+      if (tags["blind:description"] || tags["blind:tactile_paving"] === "yes") return true;
+
+      return false;
+
+    }
+
+ 
+
+    async function detectPedestrianPaths(bounds) {
+
+      const south = bounds.getSouth();
+
+      const west = bounds.getWest();
+
+      const north = bounds.getNorth();
+
+      const east = bounds.getEast();
+
+ 
+
+      const query = `
+
+        [out:json][timeout:35];
+
+        (
+
+          way["highway"~"^(footway|path|pedestrian|living_street|service|residential|tertiary|unclassified|steps|crossing|track)$"]
+
+            (${south},${west},${north},${east});
+
+          way["tactile_paving"]
+
+            (${south},${west},${north},${east});
+
+          node["tactile_paving"~"^(yes|primitive|contrasted|incorrect)$"]
+
+            (${south},${west},${north},${east});
+
+          node["highway"="crossing"]["tactile_paving"="yes"]
+
+            (${south},${west},${north},${east});
+
+        );
+
+        out body geom;
+
+      `;
+
+ 
+
+      const servers = [
+
+        "https://overpass-api.de/api/interpreter",
+
+        "https://overpass.kumi.systems/api/interpreter"
+
+      ];
+
+ 
+
+      for (const server of servers) {
+
         try {
-          const position = await new Promise((resolve, reject) => {
-            navigator.geolocation.getCurrentPosition(resolve, reject, {
-              enableHighAccuracy: false,
-              timeout: 6000,
-              maximumAge: 60000
-            });
-          });
-          return {
-            latitude: position.coords.latitude,
-            longitude: position.coords.longitude,
-            source: "GPS"
-          };
-        } catch (gpsError) {
-          console.warn("GPS unavailable, falling back to map/start location:", gpsError);
-        }
-      }
 
-      if (startCoords) {
-        return {
-          latitude: startCoords.lat,
-          longitude: startCoords.lon,
-          source: "Starting Point"
-        };
-      }
+          const res = await fetch(server + "?data=" + encodeURIComponent(query));
 
-      const center = map.getCenter();
-      return {
-        latitude: center.lat,
-        longitude: center.lng,
-        source: "Map Center"
-      };
-    }
+          if (!res.ok) continue;
 
-    async function submitCurrentReport() {
-      const button = document.getElementById("reportBtn");
-      const issueType = document.getElementById("issueType").value;
-      const description = document.getElementById("reportDescription").value.trim();
-      const mediaInput = document.getElementById("reportMedia");
+          const data = await res.json();
 
-      button.disabled = true;
-      button.textContent = "Submitting report...";
+          if (Array.isArray(data.elements)) {
 
-      try {
-        const file = mediaInput?.files?.[0] || null;
+            return data.elements.map(e => ({
 
-        // Double-check 20 MB limit on submit as a safety backup
-        if (file) {
-          if (file.size > MAX_FILE_SIZE_BYTES) {
-            throw new Error("Error: The file exceeds the 20 MB maximum size limit.");
-          }
-          if (!ALLOWED_MEDIA_TYPES.includes(file.type)) {
-            throw new Error("Error: Unsupported photo or video format.");
-          }
-        }
+              ...e,
 
-        setReportStatus("Getting your location...");
-        const { latitude, longitude, source } = await getReportCoordinates();
+              isTactile: isElementTactile(e.tags)
 
-        let mediaUrl = null;
-        let mediaType = null;
+            }));
 
-        if (file) {
-          setReportStatus("Uploading photo or video...");
-
-          const extension = file.name.includes(".")
-            ? file.name.split(".").pop().toLowerCase()
-            : (file.type === "image/jpeg" ? "jpg" : "upload");
-
-          const uniqueName =
-            (window.crypto && crypto.randomUUID
-              ? crypto.randomUUID()
-              : Date.now() + "-" + Math.random().toString(36).slice(2)) +
-            "." + extension;
-
-          const uploadedPath = "reports/" + uniqueName;
-
-          const { error: uploadError } = await supabaseClient
-            .storage
-            .from("tactile-report-media")
-            .upload(uploadedPath, file, {
-              contentType: file.type,
-              upsert: false
-            });
-
-          if (uploadError) {
-            console.error("Media upload error:", uploadError);
-            throw new Error("Media upload failed: " + uploadError.message);
           }
 
-          const { data: publicData } = supabaseClient
-            .storage
-            .from("tactile-report-media")
-            .getPublicUrl(uploadedPath);
+        } catch (err) {}
 
-          mediaUrl = publicData?.publicUrl || null;
-          mediaType = file.type.startsWith("video/") ? "video" : "image";
-        }
-
-        setReportStatus("Saving report to database...");
-
-        const { error: insertError } = await supabaseClient
-          .from("tactile_reports")
-          .insert([{
-            issue_type: issueType,
-            description: description.slice(0, 500),
-            latitude: latitude,
-            longitude: longitude,
-            status: "open",
-            media_url: mediaUrl,
-            media_type: mediaType
-          }]);
-
-        if (insertError) {
-          console.error("Supabase insert error:", insertError);
-          throw new Error("Database error: " + insertError.message);
-        }
-
-        setReportStatus(
-          `Report submitted successfully using ${source}! Thank you for helping other users.`,
-          "success"
-        );
-
-        document.getElementById("reportDescription").value = "";
-        if (mediaInput) mediaInput.value = "";
-
-        const preview = document.getElementById("mediaPreview");
-        if (preview) preview.replaceChildren();
-
-        await loadTactileReports();
-      } catch (error) {
-        console.error("Report submission error:", error);
-        setReportStatus(error.message || "Unable to submit report.", "error");
-      } finally {
-        button.disabled = false;
-        button.textContent = "Report an issue at my location";
       }
+
+      return [];
+
     }
 
-    // =========================================================================
-    // NEW (UPDATE #3): Allow users to mark an obstacle as cleared ("resolved"),
-    // delete its uploaded media if applicable, and remove the red dot from the map.
-    // =========================================================================
-    async function resolveReport(reportId, mediaUrl = null) {
-      setStatus("Updating obstacle status to cleared...");
+ 
 
-      try {
-        // 1. Update the status in Supabase from "open" to "resolved"
-        const { error } = await supabaseClient
-          .from("tactile_reports")
-          .update({ status: "resolved" })
-          .eq("id", reportId);
+    async function getDirectCampusWalkingRoute(start, destination) {
 
-        if (error) {
-          console.warn("Supabase update warning:", error.message);
-        }
+      const url = `https://router.project-osrm.org/route/v1/foot/${start.lon},${start.lat};${destination.lon},${destination.lat}?overview=full&geometries=geojson&steps=true`;
 
-        // 2. If the report had an uploaded file, attempt to delete it from Supabase Storage
-        if (mediaUrl) {
-          const bucketPrefix = "/tactile-report-media/";
-          const index = mediaUrl.indexOf(bucketPrefix);
-          if (index !== -1) {
-            const storagePath = mediaUrl.slice(index + bucketPrefix.length);
-            await supabaseClient.storage
-              .from("tactile-report-media")
-              .remove([storagePath]);
-          }
-        }
+      const res = await fetch(url);
 
-        // 3. Remove the red dot marker from the Leaflet map immediately
-        const marker = reportMarkersMap.get(reportId);
-        if (marker) {
-          tactileLayer.removeLayer(marker);
-          reportMarkersMap.delete(reportId);
-        }
+      if (!res.ok) throw new Error("Walking routing service unreachable.");
 
-        // 4. Remove the resolved report from our local list & update counter
-        cachedReports = cachedReports.filter(r => r.id !== reportId);
-        document.getElementById("tactileCount").textContent = String(cachedReports.length);
+      const data = await res.json();
 
-        // 5. Refresh the "Obstacles on Your Route" list if a route is active
-        checkObstaclesAlongRoute();
-
-        setStatus("Obstacle marked as cleared and red dot removed from the map!");
-      } catch (err) {
-        console.error("Failed to resolve report:", err);
-        setStatus("Could not update obstacle status. Please try again.");
-      }
-    }
-
-    async function loadTactileReports() {
-      const { data, error } = await supabaseClient
-        .from("tactile_reports")
-        .select(
-          "id, issue_type, description, latitude, longitude, status, created_at, media_url, media_type"
-        )
-        .eq("status", "open")
-        .order("created_at", { ascending: false })
-        .limit(500);
-
-      if (error) {
-        console.error("Could not load reports:", error.message);
-        return;
-      }
-
-      cachedReports = data || [];
-      tactileLayer.clearLayers();
-      reportMarkersMap.clear();
-
-      for (const report of cachedReports) {
-        const marker = L.circleMarker(
-          [report.latitude, report.longitude],
-          {
-            radius: 9,
-            color: "#a12626",
-            fillColor: "#e53935",
-            fillOpacity: 0.9,
-            weight: 2
-          }
-        );
-
-        const popup = document.createElement("div");
-
-        const title = document.createElement("strong");
-        title.textContent =
-          issueLabels[report.issue_type] || "Tactile path issue";
-
-        const description = document.createElement("p");
-        description.textContent =
-          report.description || "No additional description";
-
-        const time = document.createElement("p");
-        time.textContent =
-          "Reported: " +
-          new Date(report.created_at).toLocaleString();
-
-        popup.append(title, description, time);
-        
-        if (report.media_url) {
-          if (report.media_type === "image") {
-            const img = document.createElement("img");
-            img.src = report.media_url;
-            img.alt = "Reported obstacle photo";
-            img.loading = "lazy";
-            img.style.maxWidth = "220px";
-            img.style.width = "100%";
-            img.style.height = "auto";
-            img.style.borderRadius = "8px";
-            img.style.marginTop = "8px";
-            popup.appendChild(img);
-          } else if (report.media_type === "video") {
-            const video = document.createElement("video");
-            video.src = report.media_url;
-            video.controls = true;
-            video.preload = "metadata";
-            video.style.maxWidth = "220px";
-            video.style.width = "100%";
-            video.style.marginTop = "8px";
-            popup.appendChild(video);
-          }
-        }
-
-        // NEW (UPDATE #3): Button inside the red dot popup to mark obstacle as cleared
-        const clearBtn = document.createElement("button");
-        clearBtn.type = "button";
-        clearBtn.className = "resolve-btn";
-        clearBtn.textContent = "No More Block (Remove Red Dot)";
-        clearBtn.onclick = () => resolveReport(report.id, report.media_url);
-        popup.appendChild(clearBtn);
-
-        marker.bindPopup(popup);
-        marker.addTo(tactileLayer);
-
-        // Save marker reference by report ID so we can remove it when cleared
-        reportMarkersMap.set(report.id, marker);
-      }
-
-      document.getElementById("tactileCount").textContent =
-        String(cachedReports.length);
-
-      // Re-check active route obstacles whenever reports reload
-      checkObstaclesAlongRoute();
-    }
-
-    // NEW (UPDATE #3): Check if any open obstacles are within 50 meters of the active route
-    function checkObstaclesAlongRoute() {
-      const container = document.getElementById("routeObstaclesContainer");
-      container.replaceChildren();
-
-      if (!currentRouteCoordinates || currentRouteCoordinates.length === 0) {
-        return;
-      }
-
-      // Find all open reports within 50 meters of any point on the current route
-      const obstaclesOnRoute = cachedReports.filter(report => {
-        const reportLatLng = L.latLng(report.latitude, report.longitude);
-        return currentRouteCoordinates.some(coord => {
-          // GeoJSON coordinates are [longitude, latitude]
-          const routePoint = L.latLng(coord[1], coord[0]);
-          return reportLatLng.distanceTo(routePoint) <= 50;
-        });
-      });
-
-      if (obstaclesOnRoute.length === 0) {
-        return;
-      }
-
-      const wrapper = document.createElement("div");
-      wrapper.className = "obstacle-list";
-
-      const heading = document.createElement("h3");
-      heading.style.margin = "8px 0 4px 0";
-      heading.textContent = `Obstacles Reported on Your Route (${obstaclesOnRoute.length})`;
-      wrapper.appendChild(heading);
-
-      for (const report of obstaclesOnRoute) {
-        const card = document.createElement("div");
-        card.className = "obstacle-card";
-
-        const title = document.createElement("strong");
-        title.textContent = issueLabels[report.issue_type] || "Tactile path issue";
-
-        const desc = document.createElement("p");
-        desc.style.margin = "4px 0";
-        desc.textContent = report.description || "No additional description.";
-
-        const clearBtn = document.createElement("button");
-        clearBtn.type = "button";
-        clearBtn.className = "resolve-btn";
-        clearBtn.textContent = "Update: No More Block Here (Remove Red Dot)";
-        clearBtn.onclick = () => resolveReport(report.id, report.media_url);
-
-        card.append(title, desc, clearBtn);
-        wrapper.appendChild(card);
-      }
-
-      container.appendChild(wrapper);
-    }
-
-    // Load shared reports when the page starts.
-    loadTactileReports();
-
-    // 3. Convert a place name into latitude and longitude.
-    async function geocode(place) {
-      const key = place.trim().toLowerCase();
-
-      const coordinateMatch = place.match(
-        /^\s*(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)\s*$/
-      );
-
-      if (coordinateMatch) {
-        return {
-          lat: Number(coordinateMatch[1]),
-          lon: Number(coordinateMatch[2]),
-          name: place
-        };
-      }   
-      if (locationCache.has(key)) {
-        return locationCache.get(key);
-      }
-
-      if (geocode.lastRequest) {
-        const wait = 1100 - (Date.now() - geocode.lastRequest);
-        if (wait > 0) {
-          await new Promise(resolve => setTimeout(resolve, wait));
-        }
-      }
-
-      geocode.lastRequest = Date.now();
-
-      const url =
-        "https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&q=" +
-        encodeURIComponent(place);
-
-      const response = await fetch(url);
-
-      if (!response.ok) {
-        throw new Error(
-          "The location search service is unavailable. Please try again."
-        );
-      }
-
-      const results = await response.json();
-
-      if (results.length === 0) {
-        throw new Error(
-          'Location not found: "' + place +
-          '". Try adding the city or state.'
-        );
-      }
-
-      const result = {
-        lat: Number(results[0].lat),
-        lon: Number(results[0].lon),
-        name: results[0].display_name
-      };
-
-      locationCache.set(key, result);
-      return result;
-    }
-
-    // 4. Display the starting point and destination.
-    function displayLocations(start, destination) {
-      if (startMarker) map.removeLayer(startMarker);
-      if (destinationMarker) map.removeLayer(destinationMarker);
-
-      startMarker = L.marker([start.lat, start.lon])
-        .addTo(map)
-        .bindPopup("Starting point")
-        .openPopup();
-
-      destinationMarker = L.marker([
-        destination.lat,
-        destination.lon
-      ])
-        .addTo(map)
-        .bindPopup("Destination");
-
-      const bounds = L.latLngBounds(
-        [start.lat, start.lon],
-        [destination.lat, destination.lon]
-      );
-
-      map.fitBounds(bounds, { padding: [35, 35] });
-    }
-
-    // 5. Find a route using OSRM.
-    async function getRoute(start, destination, mode) {
-      const osrmProfile =
-        mode === "walking" ? "foot" :
-        mode === "cycling" ? "bike" : "driving";
-
-      const coordinates =
-        start.lon + "," + start.lat + ";" +
-        destination.lon + "," + destination.lat;
-
-      const url =
-        "https://router.project-osrm.org/route/v1/" + osrmProfile + "/" +
-        coordinates +
-        "?overview=full&geometries=geojson&steps=true";
-
-      const response = await fetch(url);
-
-      if (!response.ok) {
-        throw new Error(
-          "The routing service is unavailable. Please try again."
-        );
-      }
-
-      const data = await response.json();
-
-      if (data.code !== "Ok" || !data.routes.length) {
-        throw new Error("No route was found.");
-      }
+      if (data.code !== "Ok" || !data.routes.length) throw new Error("No walking connection found between these points.");
 
       return data.routes[0];
+
     }
 
-    // 6. Main function: search for both places and draw the route.
-    async function findRoute() {
-      const startText = document.getElementById("start").value.trim();
-      const destinationText = document.getElementById("destination").value.trim();
-      const mode = document.getElementById("mode").value;
+ 
 
-      if (!startText || !destinationText) {
-        setStatus("Please enter both a starting point and a destination.");
-        return;
+    function buildSpokenInstructions(segments) {
+
+      if (!segments.length) return [];
+
+ 
+
+      const list = [];
+
+      let accumulatedDist = segments[0].distance;
+
+      let currentTactile = segments[0].isTactile;
+
+      let startPoint = segments[0].from;
+
+      let incomingBearing = getBearing(startPoint, segments[0].to);
+
+ 
+
+      for (let i = 1; i < segments.length; i++) {
+
+        const seg = segments[i];
+
+        const segBearing = getBearing(seg.from, seg.to);
+
+        const turnAngle = ((segBearing - incomingBearing + 540) % 360) - 180;
+
+        const pavingChanged = seg.isTactile !== currentTactile;
+
+ 
+
+        if (Math.abs(turnAngle) >= 35 || pavingChanged) {
+
+          const surfaceName = currentTactile ? "tactile blind path" : "ordinary walking path";
+
+          const turnPhrase = list.length === 0 ? "Start walking" : getTurnDescription(turnAngle);
+
+ 
+
+          list.push({
+
+            point: startPoint,
+
+            distance: Math.round(accumulatedDist),
+
+            isTactile: currentTactile,
+
+            turnText: turnPhrase,
+
+            speechText: `${turnPhrase}. Walk ${Math.round(accumulatedDist)} metres on the ${surfaceName}.`
+
+          });
+
+ 
+
+          startPoint = seg.from;
+
+          accumulatedDist = seg.distance;
+
+          currentTactile = seg.isTactile;
+
+          incomingBearing = segBearing;
+
+        } else {
+
+          accumulatedDist += seg.distance;
+
+          incomingBearing = segBearing;
+
+        }
+
       }
 
-      routeButton.disabled = true;
-      routeButton.textContent = "Finding route...";
-      resetResults();
+ 
+
+      const finalSurface = currentTactile ? "tactile path" : "ordinary path";
+
+      list.push({
+
+        point: startPoint,
+
+        distance: Math.round(accumulatedDist),
+
+        isTactile: currentTactile,
+
+        turnText: list.length === 0 ? "Walk straight" : "Continue straight",
+
+        speechText: `Continue straight for ${Math.round(accumulatedDist)} metres on the ${finalSurface} to destination.`
+
+      });
+
+ 
+
+      list.push({
+
+        point: segments[segments.length - 1].to,
+
+        distance: 0,
+
+        isTactile: false,
+
+        turnText: "Arrived",
+
+        speechText: "You have arrived at your destination."
+
+      });
+
+ 
+
+      return list;
+
+    }
+
+ 
+
+    function renderDirectionsUI(steps) {
+
+      const container = document.getElementById("directionsList");
+
+      container.innerHTML = "";
+
+ 
+
+      steps.forEach((step, idx) => {
+
+        const item = document.createElement("div");
+
+        item.className = "instruction-step";
+
+        item.id = `step-${idx}`;
+
+        item.onclick = () => selectStep(idx);
+
+ 
+
+        const badgeClass = step.isTactile ? "badge-tactile" : "badge-regular";
+
+        const badgeLabel = idx === steps.length - 1 ? "Finish" : (step.isTactile ? "Tactile Paving" : "Regular Walkway");
+
+ 
+
+        item.innerHTML = `
+
+          <div class="step-number">${idx + 1}</div>
+
+          <div style="flex-grow: 1;">
+
+            <span class="step-badge ${badgeClass}">${badgeLabel}</span>
+
+            <div style="font-weight: bold; font-size: 14px;">${step.turnText}</div>
+
+            <div style="font-size: 13px; color: #475569; margin-top: 2px;">${step.speechText}</div>
+
+          </div>
+
+        `;
+
+        container.appendChild(item);
+
+      });
+
+ 
+
+      document.getElementById("voiceBar").style.display = "flex";
+
+    }
+
+ 
+
+    function selectStep(idx) {
+
+      stopAutoPlay();
+
+      currentStepIdx = idx;
+
+      highlightStep(idx);
+
+      speakCurrentStep();
+
+    }
+
+ 
+
+    function highlightStep(idx) {
+
+      document.querySelectorAll(".instruction-step").forEach(el => el.classList.remove("active"));
+
+      const el = document.getElementById(`step-${idx}`);
+
+      if (el) {
+
+        el.classList.add("active");
+
+        el.scrollIntoView({ behavior: "smooth", block: "nearest" });
+
+      }
+
+ 
+
+      if (instructions[idx]) {
+
+        const pt = instructions[idx].point;
+
+        if (!userMarker) {
+
+          userMarker = L.circleMarker([pt.lat, pt.lon], {
+
+            radius: 8,
+
+            color: "#b45309",
+
+            fillColor: "#f59e0b",
+
+            fillOpacity: 1
+
+          }).addTo(map);
+
+        } else {
+
+          userMarker.setLatLng([pt.lat, pt.lon]);
+
+        }
+
+      }
+
+    }
+
+ 
+
+    function speakCurrentStep() {
+
+      if (!instructions[currentStepIdx]) return;
+
+      highlightStep(currentStepIdx);
+
+      speakText(instructions[currentStepIdx].speechText);
+
+    }
+
+ 
+
+    function nextStepVoice() {
+
+      if (currentStepIdx < instructions.length - 1) {
+
+        currentStepIdx++;
+
+        highlightStep(currentStepIdx);
+
+        speakCurrentStep();
+
+      } else {
+
+        speakText("End of journey directions.");
+
+      }
+
+    }
+
+ 
+
+    function toggleAutoPlay() {
+
+      if (isAutoPlaying) {
+
+        stopAutoPlay();
+
+      } else {
+
+        startAutoPlay();
+
+      }
+
+    }
+
+ 
+
+    function startAutoPlay() {
+
+      if (!instructions.length) return;
+
+      isAutoPlaying = true;
+
+      document.getElementById("autoPlayBtn").textContent = "Pause Reading";
+
+      document.getElementById("autoPlayBtn").style.background = "#dc2626";
+
+ 
+
+      function playNext() {
+
+        if (!isAutoPlaying) return;
+
+        if (currentStepIdx >= instructions.length) {
+
+          stopAutoPlay();
+
+          return;
+
+        }
+
+ 
+
+        highlightStep(currentStepIdx);
+
+        speakText(instructions[currentStepIdx].speechText, () => {
+
+          currentStepIdx++;
+
+          autoPlayTimer = setTimeout(playNext, 1200);
+
+        });
+
+      }
+
+ 
+
+      playNext();
+
+    }
+
+ 
+
+    function stopAutoPlay() {
+
+      isAutoPlaying = false;
+
+      clearTimeout(autoPlayTimer);
+
+      const btn = document.getElementById("autoPlayBtn");
+
+      if (btn) {
+
+        btn.textContent = "Read Entire Route";
+
+        btn.style.background = "#d97706";
+
+      }
+
+    }
+
+ 
+
+    function toggleSimulation() {
+
+      if (simulationTimer) {
+
+        clearInterval(simulationTimer);
+
+        simulationTimer = null;
+
+        document.getElementById("simBtn").textContent = "Simulate Walk";
+
+        return;
+
+      }
+
+ 
+
+      document.getElementById("simBtn").textContent = "Stop Simulation";
+
+      currentStepIdx = 0;
+
+      highlightStep(0);
+
+      speakCurrentStep();
+
+ 
+
+      simulationTimer = setInterval(() => {
+
+        if (currentStepIdx < instructions.length - 1) {
+
+          currentStepIdx++;
+
+          highlightStep(currentStepIdx);
+
+          speakCurrentStep();
+
+        } else {
+
+          clearInterval(simulationTimer);
+
+          simulationTimer = null;
+
+          document.getElementById("simBtn").textContent = "Simulate Walk";
+
+        }
+
+      }, 5500);
+
+    }
+
+ 
+
+    async function findRoute() {
+
+      const startText = document.getElementById("start").value.trim();
+
+      const destText = document.getElementById("destination").value.trim();
+
+      const btn = document.getElementById("routeBtn");
+
+ 
+
+      if (!startText || !destText) {
+
+        announce("Please enter or speak both a starting point and destination.");
+
+        return;
+
+      }
+
+ 
+
+      stopAutoPlay();
+
+      if (simulationTimer) clearInterval(simulationTimer);
+
+ 
+
+      btn.disabled = true;
+
+      btn.textContent = "Finding Route...";
+
+ 
 
       try {
-        setStatus("Searching for the starting point...");
-        const start = await geocode(startText);
 
-        setStatus("Searching for the destination...");
-        const destination = await geocode(destinationText);
+        announce("Locating campus destinations...");
 
-        startCoords = start;
-        destinationCoords = destination;
+        const start = resolveLocation(startText);
 
-        displayLocations(start, destination);
+        const destination = resolveLocation(destText);
 
-        setStatus("Calculating the " + mode + " route...");
-        const route = await getRoute(start, destination, mode);
+ 
+
+        if (!start) throw new Error(`Could not find location "${startText}". Try KK1 to KK12 or faculty names.`);
+
+        if (!destination) throw new Error(`Could not find location "${destText}". Try KK1 to KK12 or faculty names.`);
+
+ 
+
+        if (startMarker) map.removeLayer(startMarker);
+
+        if (destinationMarker) map.removeLayer(destinationMarker);
 
         if (routeLine) map.removeLayer(routeLine);
 
-        routeLine = L.geoJSON(route.geometry, {
-          style: {
-            color: "#1769ff",
-            weight: 5,
-            opacity: 0.8
+        if (userMarker) { map.removeLayer(userMarker); userMarker = null; }
+
+ 
+
+        startMarker = L.marker([start.lat, start.lon]).addTo(map).bindPopup("Start: " + start.name).openPopup();
+
+        destinationMarker = L.marker([destination.lat, destination.lon]).addTo(map).bindPopup("Destination: " + destination.name);
+
+ 
+
+        const bounds = L.latLngBounds([start.lat, start.lon], [destination.lat, destination.lon]);
+
+        bounds.extend([bounds.getSouth() - 0.005, bounds.getWest() - 0.005]);
+
+        bounds.extend([bounds.getNorth() + 0.005, bounds.getEast() + 0.005]);
+
+ 
+
+        announce("Calculating direct route and checking tactile blind paving...");
+
+        const [features, walkRoute] = await Promise.all([
+
+          detectPedestrianPaths(bounds),
+
+          getDirectCampusWalkingRoute(start, destination)
+
+        ]);
+
+ 
+
+        const rawCoords = walkRoute.geometry.coordinates.map(c => ({ lat: c[1], lon: c[0] }));
+
+        const segments = [];
+
+ 
+
+        for (let i = 0; i < rawCoords.length - 1; i++) {
+
+          const midLat = (rawCoords[i].lat + rawCoords[i+1].lat) / 2;
+
+          const midLon = (rawCoords[i].lon + rawCoords[i+1].lon) / 2;
+
+ 
+
+          let isNearTactile = false;
+
+ 
+
+          for (const f of features) {
+
+            if (!f.isTactile) continue;
+
+ 
+
+            if (f.geometry) {
+
+              for (const pt of f.geometry) {
+
+                if (distanceMetres({ lat: midLat, lon: midLon }, pt) < 18) {
+
+                  isNearTactile = true;
+
+                  break;
+
+                }
+
+              }
+
+            } else if (f.lat && f.lon) {
+
+              if (distanceMetres({ lat: midLat, lon: midLon }, { lat: f.lat, lon: f.lon }) < 18) {
+
+                isNearTactile = true;
+
+              }
+
+            }
+
+            if (isNearTactile) break;
+
           }
-        }).addTo(map);
 
-        // NEW: Store the route's coordinates and check if any obstacles are along this route
-        currentRouteCoordinates = route.geometry.coordinates || [];
-        checkObstaclesAlongRoute();
+ 
 
-        map.fitBounds(routeLine.getBounds(), {
-          padding: [35, 35]
+          segments.push({
+
+            from: rawCoords[i],
+
+            to: rawCoords[i+1],
+
+            distance: distanceMetres(rawCoords[i], rawCoords[i+1]),
+
+            isTactile: isNearTactile
+
+          });
+
+        }
+
+ 
+
+        routeLine = L.featureGroup();
+
+        segments.forEach(seg => {
+
+          L.polyline([[seg.from.lat, seg.from.lon], [seg.to.lat, seg.to.lon]], {
+
+            color: seg.isTactile ? "#d97706" : "#2563eb",
+
+            weight: 7,
+
+            opacity: 0.95
+
+          }).addTo(routeLine);
+
         });
 
-        const km = route.distance / 1000;
-        const minutes = Math.round(route.duration / 60);
+ 
 
-        document.getElementById("distance").textContent =
-          km.toFixed(2) + " km";
+        routeLine.addTo(map);
 
-        document.getElementById("duration").textContent =
-          minutes >= 60
-            ? Math.floor(minutes / 60) + " hr " +
-              (minutes % 60) + " min"
-            : minutes + " min";
+        map.fitBounds(routeLine.getBounds(), { padding: [40, 40] });
 
-        document.getElementById("googleBtn").disabled = false;
+ 
 
-        setStatus(
-          "Route found! Distance is " + km.toFixed(2) + " kilometers."
-        );
-      } catch (error) {
-        setStatus(error.message || "Something went wrong.");
+        const totalDist = segments.reduce((sum, s) => sum + s.distance, 0);
+
+        const tactileDist = segments.filter(s => s.isTactile).reduce((sum, s) => sum + s.distance, 0);
+
+        const percent = totalDist > 0 ? Math.round((tactileDist / totalDist) * 100) : 0;
+
+        const estDuration = Math.max(1, Math.round(totalDist / 1.1 / 60));
+
+ 
+
+        document.getElementById("distance").textContent = `${Math.round(totalDist)} m`;
+
+        document.getElementById("tactileCoverage").textContent = `${percent}% (${Math.round(tactileDist)}m)`;
+
+        document.getElementById("duration").textContent = `${estDuration} min`;
+
+ 
+
+        instructions = buildSpokenInstructions(segments);
+
+        currentStepIdx = 0;
+
+        renderDirectionsUI(instructions);
+
+        highlightStep(0);
+
+ 
+
+        document.getElementById("status").textContent = `Direct route found: ${Math.round(totalDist)} m (${percent}% tactile blind path).`;
+
+        speakText(`Route found: Total distance is ${Math.round(totalDist)} metres, with ${percent} percent tactile blind path coverage. First instruction: ${instructions[0].speechText}`);
+
+ 
+
+      } catch (err) {
+
+        announce(err.message || "Failed to find connected route.");
+
       } finally {
-        routeButton.disabled = false;
-        routeButton.textContent = "Find route";
+
+        btn.disabled = false;
+
+        btn.textContent = "Find Route";
+
       }
+
     }
 
-    // 7. Use the browser's location permission.
-    function useMyLocation() {
+ 
+
+    function useMyLocation(onSuccessCallback = null) {
+
       if (!navigator.geolocation) {
-        setStatus("Your browser does not support location services.");
+
+        announce("Geolocation is not supported by your browser.");
+
         return;
+
       }
 
-      setStatus("Requesting your location...");
+      announce("Locating accurate position via GPS...");
+
+ 
 
       navigator.geolocation.getCurrentPosition(
-        position => {
-          const lat = position.coords.latitude;
-          const lon = position.coords.longitude;
 
-          startCoords = { lat, lon };
-          document.getElementById("start").value =
-            lat.toFixed(6) + ", " + lon.toFixed(6);
-
-          map.setView([lat, lon], 15);
-
-          if (startMarker) map.removeLayer(startMarker);
-
-          startMarker = L.marker([lat, lon])
-            .addTo(map)
-            .bindPopup("Your current location")
-            .openPopup();
-
-          setStatus(
-            "Location added as your starting point. Enter a destination and click Find route."
-          );
-        },
-        error => {
-          const messages = {
-            1: "Location permission was denied. Allow location access in your browser.",
-            2: "Your location is currently unavailable.",
-            3: "The location request timed out."
-          };
-
-          setStatus(messages[error.code] || "Could not get your location.");
-        },
-        {
-          enableHighAccuracy: true,
-          timeout: 10000,
-          maximumAge: 60000
-        }
-      );
-    }
-
-    // 8. Clear the current route and inputs.
-    function clearRoute() {
-      document.getElementById("start").value = "";
-      document.getElementById("destination").value = "";
-      if (startMarker) map.removeLayer(startMarker);
-      if (destinationMarker) map.removeLayer(destinationMarker);
-      if (routeLine) map.removeLayer(routeLine);
-      startMarker = null;
-      destinationMarker = null;
-      routeLine = null;
-      currentRouteCoordinates = [];
-      startCoords = null;
-      destinationCoords = null;
-      resetResults();
-      setStatus("Cleared. Enter your starting point and destination to begin.");
-    }
-
-    // 9. Open the found route in Google Maps.
-    function openGoogleMaps() {
-      if (!startCoords || !destinationCoords) return;
-      const mode = document.getElementById("mode").value;
-      const url =
-        `https://www.google.com/maps/dir/?api=1` +
-        `&origin=${startCoords.lat},${startCoords.lon}` +
-        `&destination=${destinationCoords.lat},${destinationCoords.lon}` +
-        `&travelmode=${mode}`;
-      window.open(url, "_blank", "noopener");
-    }
-
-    // 10. Nearby obstacle voice alerts.
-    function toggleNearbyAlerts() {
-      const btn = document.getElementById("nearbyAlertBtn");
-      const alertStatus = document.getElementById("nearbyAlertStatus");
-
-      if (nearbyWatchId !== null) {
-        navigator.geolocation.clearWatch(nearbyWatchId);
-        nearbyWatchId = null;
-        btn.textContent = "Enable Nearby Obstacle Alerts";
-        alertStatus.textContent = "Nearby obstacle alerts are currently off.";
-        speakText("Nearby obstacle alerts disabled.");
-        return;
-      }
-
-      if (!navigator.geolocation) {
-        alertStatus.textContent = "Geolocation is not supported by your browser.";
-        return;
-      }
-
-      btn.textContent = "Disable Nearby Obstacle Alerts";
-      alertStatus.textContent = "Monitoring for nearby obstacles...";
-      speakText("Nearby obstacle alerts enabled.");
-
-      nearbyWatchId = navigator.geolocation.watchPosition(
         pos => {
-          const userLatLng = L.latLng(pos.coords.latitude, pos.coords.longitude);
-          let closestDistance = Infinity;
-          let closestReport = null;
 
-          for (const report of cachedReports) {
-            const reportLatLng = L.latLng(report.latitude, report.longitude);
-            const dist = userLatLng.distanceTo(reportLatLng);
-            if (dist < closestDistance) {
-              closestDistance = dist;
-              closestReport = report;
-            }
+          const lat = pos.coords.latitude;
+
+          const lon = pos.coords.longitude;
+
+          document.getElementById("start").value = `${lat.toFixed(6)}, ${lon.toFixed(6)}`;
+
+          map.setView([lat, lon], 17);
+
+          announce("Current location set as starting point.");
+
+          if (typeof onSuccessCallback === "function") {
+
+            onSuccessCallback();
+
           }
 
-          if (closestReport && closestDistance <= 50) {
-            const label = issueLabels[closestReport.issue_type] || "Obstacle";
-            const msg = `Warning: ${label} reported ${Math.round(closestDistance)} meters away.`;
-            alertStatus.textContent = msg;
-            speakText(msg);
-          } else {
-            alertStatus.textContent = "No reported obstacles within 50 meters.";
-          }
         },
-        err => {
-          alertStatus.textContent = "Unable to track location for alerts.";
+
+        () => {
+
+          announce("GPS accuracy timed out or was denied. Check your browser location permissions.");
+
         },
-        { enableHighAccuracy: true, maximumAge: 10000, timeout: 10000 }
+
+        {
+
+          enableHighAccuracy: true,
+
+          timeout: 10000,
+
+          maximumAge: 0
+
+        }
+
       );
+
     }
+
+ 
+
+    function clearRoute() {
+
+      stopAutoPlay();
+
+      if (simulationTimer) clearInterval(simulationTimer);
+
+ 
+
+      if (startMarker) map.removeLayer(startMarker);
+
+      if (destinationMarker) map.removeLayer(destinationMarker);
+
+      if (routeLine) map.removeLayer(routeLine);
+
+      if (userMarker) { map.removeLayer(userMarker); userMarker = null; }
+
+ 
+
+      document.getElementById("start").value = "";
+
+      document.getElementById("destination").value = "";
+
+      document.getElementById("distance").textContent = "—";
+
+      document.getElementById("tactileCoverage").textContent = "—";
+
+      document.getElementById("duration").textContent = "—";
+
+      document.getElementById("voiceBar").style.display = "none";
+
+      document.getElementById("directionsList").innerHTML = '<p style="color: #64748b; margin: 0; text-align: center;">Turn-by-turn guidance will appear here once route is found.</p>';
+
+ 
+
+      announce("Route cleared.");
+
+    }
+
   </script>
+
 </body>
+
 </html>
+
